@@ -2,31 +2,15 @@ const myargs = process.argv.slice(2);
 const fs = require('fs');
 const Path = require('path');
 const Jimp = require('jimp');
-const loadImage = p => new Promise((resolve, reject) => Jimp.read(p).then(resolve).catch(reject));
-const getImageSize = i => ({
-    width: i.bitmap.width,
-    height: i.bitmap.height
+const loadImage = imgPath => Jimp.read(imgPath);
+const getImageSize = jimpImg => ({
+    width: jimpImg.bitmap.width,
+    height: jimpImg.bitmap.height
 });
-const isImageSquare = i => getImageSize(i).height === getImageSize(i).width;
-const newSquare = (dimention, color) => new Promise((resolve, reject) => {
-    new Jimp(dimention, dimention, color, (err, image) => {
-        if (err) {
-            reject(err);
-        } else {
-            resolve(image);
-        }
-    });
-});
+const isImageSquare = jimpImg => getImageSize(jimpImg).height === getImageSize(jimpImg).width;
+const newSquare = (dimention, color) => new Jimp(dimention, dimention, color);
 const isOdd = n => (Math.abs(n % 2) == 1);
-const scaleImage = (i, scaleBy) => new Promise((resolve, reject) => {
-    i.scale(scaleBy, (err, image) => {
-        if (err) {
-            reject(err);
-        } else {
-            resolve(image);
-        }
-    });
-})
+const scaleImage = (jimpImg, scaleBy) => jimpImg.scale(scaleBy);
 const makeImageSquare = async (jimpImg, extraColor = '#ffffff') => {
     if (isImageSquare(jimpImg)) {
         return jimpImg;
@@ -44,18 +28,11 @@ const makeImageSquare = async (jimpImg, extraColor = '#ffffff') => {
     const newX = ((newSquareSize - oldImageScaledSize.width) / 2);
     const newY = ((newSquareSize - oldImageScaledSize.height) / 2);
 
-    return (await (new Promise((resolve, reject) => {
-        newImage.composite(oldImageScaled, newX, newY, {
-            opacitySource: 1,
-            opacityDest: 1
-        }, (err, image) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(image);
-            }
-        });
-    })));
+    const finalImage = await newImage.composite(oldImageScaled, newX, newY, {
+        opacitySource: 1,
+        opacityDest: 1
+    });
+    return finalImage;
 };
 if (myargs.length > 0 && fs.existsSync(myargs[0])) {
     const inPath = Path.parse(myargs[0]);
